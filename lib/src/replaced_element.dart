@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chewie/chewie.dart';
 import 'package:chewie_audio/chewie_audio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +28,9 @@ abstract class ReplacedElement extends StyledElement {
   }) : super(name: name, children: null, style: style, node: node);
 
   static List<String> parseMediaSources(List<dom.Element> elements) {
-    return elements.where((element) => element.localName == 'source').map((element) {
+    return elements
+        .where((element) => element.localName == 'source')
+        .map((element) {
       return element.attributes['src'];
     }).toList();
   }
@@ -68,20 +72,33 @@ class ImageContentElement extends ReplacedElement {
 
   @override
   Widget toWidget(RenderContext context) {
-    if (src == null) return Text(alt ?? "", style: context.style.generateTextStyle());
+    if (src == null)
+      return Text(alt ?? "", style: context.style.generateTextStyle());
     if (src.startsWith("data:image") && src.contains("base64,")) {
       return Image.memory(base64.decode(src.split("base64,")[1].trim()));
     } else {
-      return Image.network(
-        src,
-        frameBuilder: (ctx, child, frame, something) {
-          if (frame == null) {
+      return Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: CachedNetworkImage(
+          imageUrl: src,
+          errorWidget: (BuildContext c, String s, Object o) {
             return Text(alt ?? "", style: context.style.generateTextStyle());
-          }
-
-          return child;
-        },
+          },
+          placeholder: (BuildContext context, String url) =>
+              Icon(FontAwesomeIcons.image),
+        ),
       );
+
+      // return Image.network(
+      //   src,
+      //   frameBuilder: (ctx, child, frame, something) {
+      //     if (frame == null) {
+      //       return Text(alt ?? "", style: context.style.generateTextStyle());
+      //     }
+
+      //     return child;
+      //   },
+      // );
     }
     //TODO(Sub6Resources): precacheImage
   }
@@ -110,7 +127,9 @@ class IframeContentElement extends ReplacedElement {
       child: WebView(
         initialUrl: src,
         javascriptMode: JavascriptMode.unrestricted,
-        gestureRecognizers: {Factory(() => PlatformViewVerticalGestureRecognizer())},
+        gestureRecognizers: {
+          Factory(() => PlatformViewVerticalGestureRecognizer())
+        },
       ),
     );
   }
@@ -189,7 +208,9 @@ class VideoContentElement extends ReplacedElement {
           videoPlayerController: VideoPlayerController.network(
             src.first ?? "",
           ),
-          placeholder: poster != null ? Image.network(poster) : Container(color: Colors.black),
+          placeholder: poster != null
+              ? Image.network(poster)
+              : Container(color: Colors.black),
           autoPlay: autoplay,
           looping: loop,
           showControls: showControls,
@@ -293,8 +314,10 @@ ReplacedElement parseReplacedElement(dom.Element element) {
 }
 
 // TODO(Sub6Resources): Remove when https://github.com/flutter/flutter/issues/36304 is resolved
-class PlatformViewVerticalGestureRecognizer extends VerticalDragGestureRecognizer {
-  PlatformViewVerticalGestureRecognizer({PointerDeviceKind kind}) : super(kind: kind);
+class PlatformViewVerticalGestureRecognizer
+    extends VerticalDragGestureRecognizer {
+  PlatformViewVerticalGestureRecognizer({PointerDeviceKind kind})
+      : super(kind: kind);
 
   Offset _dragDistance = Offset.zero;
 
