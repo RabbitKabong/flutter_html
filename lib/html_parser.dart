@@ -241,6 +241,7 @@ class HtmlParser extends StatelessWidget {
                 padding: EdgeInsets.only(
                     left: 30), //TODO derive this from list padding.
                 child: RichText(
+                  textAlign: tree.style.textAlign,
                   text: TextSpan(
                     children: tree.children
                             ?.map((tree) => parseTree(newContext, tree))
@@ -269,6 +270,7 @@ class HtmlParser extends StatelessWidget {
         child: GestureDetector(
           onTap: () => onLinkTap(tree.href),
           child: RichText(
+            textAlign: newContext.style.textAlign,
             text: TextSpan(
               style: newContext.style.generateTextStyle(),
               children: tree.children
@@ -579,8 +581,7 @@ class ContainerSpan extends StatelessWidget {
       alignment: style?.alignment,
       child: child ??
           RichText(
-            textAlign:
-                style?.textAlign != null ? style?.textAlign : TextAlign.start,
+            textAlign: style?.textAlign,
             text: TextSpan(
               style: newContext.style.generateTextStyle(),
               children: children,

@@ -82,7 +82,7 @@ class Style {
     this.border,
     this.alignment = Alignment.centerLeft, //TODO
     this.markerContent,
-    this.textAlign,
+    this.textAlign = TextAlign.start,
   });
 
   //TODO: all attributes of TextStyle likely have a CSS attribute and should be supported.
@@ -148,6 +148,7 @@ class Style {
       fontWeight: child.fontWeight ?? fontWeight,
       listStyleType: child.listStyleType ?? listStyleType,
       whiteSpace: child.whiteSpace ?? whiteSpace,
+      textAlign: child.textAlign ?? textAlign,
     );
   }
 
