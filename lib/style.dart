@@ -48,6 +48,8 @@ class Style {
   ///CSS attribute "`width`"
   double width;
 
+  TextAlign textAlign;
+
   //TODO modify these to match CSS styles
   int baselineOffset;
   String before;
