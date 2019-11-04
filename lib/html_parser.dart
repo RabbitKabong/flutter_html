@@ -579,7 +579,8 @@ class ContainerSpan extends StatelessWidget {
       alignment: style?.alignment,
       child: child ??
           RichText(
-            textAlign: style?.textAlign,
+            textAlign:
+                style?.textAlign != null ? style?.textAlign : TextAlign.start,
             text: TextSpan(
               style: newContext.style.generateTextStyle(),
               children: children,

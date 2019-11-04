@@ -82,6 +82,7 @@ class Style {
     this.border,
     this.alignment = Alignment.centerLeft, //TODO
     this.markerContent,
+    this.textAlign,
   });
 
   //TODO: all attributes of TextStyle likely have a CSS attribute and should be supported.
@@ -132,6 +133,7 @@ class Style {
       //TODO merge border
       alignment: other.alignment,
       markerContent: other.markerContent,
+      textAlign: other.textAlign,
     );
   }
 
@@ -173,6 +175,7 @@ class Style {
     Border border,
     Alignment alignment,
     String markerContent,
+    TextAlign textAlign,
   }) {
     return Style(
       backgroundColor: backgroundColor ?? this.backgroundColor,
@@ -197,6 +200,7 @@ class Style {
       border: border ?? this.border,
       alignment: alignment ?? this.alignment,
       markerContent: markerContent ?? this.markerContent,
+      textAlign: textAlign ?? this.textAlign,
     );
   }
 
