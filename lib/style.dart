@@ -58,6 +58,7 @@ class Style {
   Border border;
   Alignment alignment;
   String markerContent;
+  double letterSpacing;
 
   Style({
     this.backgroundColor,
@@ -83,20 +84,21 @@ class Style {
     this.alignment = Alignment.centerLeft, //TODO
     this.markerContent,
     this.textAlign = TextAlign.start,
+    this.letterSpacing,
   });
 
   //TODO: all attributes of TextStyle likely have a CSS attribute and should be supported.
   TextStyle generateTextStyle() {
     return TextStyle(
-      backgroundColor: backgroundColor,
-      color: color,
-      decoration: textDecoration,
-      decorationStyle: textDecorationStyle,
-      fontFamily: fontFamily,
-      fontSize: fontSize,
-      fontStyle: fontStyle,
-      fontWeight: fontWeight,
-    );
+        backgroundColor: backgroundColor,
+        color: color,
+        decoration: textDecoration,
+        decorationStyle: textDecorationStyle,
+        fontFamily: fontFamily,
+        fontSize: fontSize,
+        fontStyle: fontStyle,
+        fontWeight: fontWeight,
+        letterSpacing: letterSpacing);
   }
 
   @override
@@ -134,6 +136,7 @@ class Style {
       alignment: other.alignment,
       markerContent: other.markerContent,
       textAlign: other.textAlign,
+      letterSpacing: other.letterSpacing,
     );
   }
 
@@ -149,6 +152,7 @@ class Style {
       listStyleType: child.listStyleType ?? listStyleType,
       whiteSpace: child.whiteSpace ?? whiteSpace,
       textAlign: child.textAlign ?? textAlign,
+      letterSpacing: child.letterSpacing ?? letterSpacing,
     );
   }
 
@@ -177,6 +181,7 @@ class Style {
     Alignment alignment,
     String markerContent,
     TextAlign textAlign,
+    double letterSpacing,
   }) {
     return Style(
       backgroundColor: backgroundColor ?? this.backgroundColor,
@@ -202,6 +207,7 @@ class Style {
       alignment: alignment ?? this.alignment,
       markerContent: markerContent ?? this.markerContent,
       textAlign: textAlign ?? this.textAlign,
+      letterSpacing: letterSpacing ?? this.letterSpacing,
     );
   }
 
@@ -214,6 +220,7 @@ class Style {
     this.fontSize = textStyle.fontSize;
     this.fontStyle = textStyle.fontStyle;
     this.fontWeight = textStyle.fontWeight;
+    this.letterSpacing = textStyle.letterSpacing;
   }
 }
 
