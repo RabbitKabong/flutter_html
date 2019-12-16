@@ -30,7 +30,7 @@ dependencies:
   flutter_svg: ^0.14.1
 
   # Plugin for rendering the <img> tag.
-  cached_network_image: ^1.1.2+1
+  cached_network_image: ^2.0.0-rc.1
   font_awesome_flutter: ^8.5.0
 
   flutter:
