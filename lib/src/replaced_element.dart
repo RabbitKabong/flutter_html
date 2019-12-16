@@ -78,7 +78,7 @@ class ImageContentElement extends ReplacedElement {
       return Image.memory(base64.decode(src.split("base64,")[1].trim()));
     } else {
       return Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: style.padding,
         child: CachedNetworkImage(
           imageUrl: src,
           errorWidget: (BuildContext c, String s, Object o) {
