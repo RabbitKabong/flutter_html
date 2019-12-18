@@ -22,9 +22,6 @@ const STYLED_ELEMENTS = [
   "kbd",
   "mark",
   "q",
-  "rp",
-  "rt",
-  "ruby",
   "s",
   "samp",
   "small",
@@ -33,6 +30,8 @@ const STYLED_ELEMENTS = [
   "strong",
   "sub",
   "sup",
+  "td",
+  "th",
   "time",
   "tt",
   "u",
@@ -85,6 +84,9 @@ const REPLACED_ELEMENTS = [
   "svg",
   "template",
   "video",
+  "rp",
+  "rt",
+  "ruby",
 ];
 
 const LAYOUT_ELEMENTS = [
@@ -93,6 +95,11 @@ const LAYOUT_ELEMENTS = [
   "tbody",
   "tfoot",
   "thead",
+];
+
+const TABLE_STYLE_ELEMENTS = [
+  "col",
+  "colgroup"
 ];
 
 /**

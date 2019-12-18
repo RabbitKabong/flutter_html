@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chewie/chewie.dart';
 import 'package:chewie_audio/chewie_audio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter_html/src/utils.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:video_player/video_player.dart';
@@ -21,11 +23,14 @@ import 'package:html/dom.dart' as dom;
 /// A [ReplacedElement] may use its children nodes to determine relevant information
 /// (e.g. <video>'s <source> tags), but the children nodes will not be saved as [children].
 abstract class ReplacedElement extends StyledElement {
-  ReplacedElement({
-    String name,
-    Style style,
-    dom.Element node,
-  }) : super(name: name, children: null, style: style, node: node);
+  PlaceholderAlignment alignment;
+
+  ReplacedElement(
+      {String name,
+      Style style,
+      dom.Element node,
+      this.alignment = PlaceholderAlignment.aboveBaseline})
+      : super(name: name, children: null, style: style, node: node);
 
   static List<String> parseMediaSources(List<dom.Element> elements) {
     return elements
@@ -72,35 +77,68 @@ class ImageContentElement extends ReplacedElement {
 
   @override
   Widget toWidget(RenderContext context) {
-    if (src == null)
-      return Text(alt ?? "", style: context.style.generateTextStyle());
-    if (src.startsWith("data:image") && src.contains("base64,")) {
-      return Image.memory(base64.decode(src.split("base64,")[1].trim()));
-    } else {
-      return Padding(
-        padding: style?.padding ?? EdgeInsets.zero,
-        child: CachedNetworkImage(
-          imageUrl: src,
-          errorWidget: (BuildContext c, String s, Object o) {
-            return Text(alt ?? "", style: context.style.generateTextStyle());
-          },
-          placeholder: (BuildContext context, String url) =>
-              Icon(FontAwesomeIcons.image),
-        ),
+    Widget imageWidget;
+    if (src == null) {
+      imageWidget = Text(alt ?? "", style: context.style.generateTextStyle());
+    } else if (src.startsWith("data:image") && src.contains("base64,")) {
+      final decodedImage = base64.decode(src.split("base64,")[1].trim());
+      precacheImage(
+        MemoryImage(decodedImage),
+        context.buildContext,
+        onError: (exception, StackTrace stackTrace) {
+          context.parser.onImageError?.call(exception, stackTrace);
+        },
       );
-
-      // return Image.network(
-      //   src,
-      //   frameBuilder: (ctx, child, frame, something) {
-      //     if (frame == null) {
-      //       return Text(alt ?? "", style: context.style.generateTextStyle());
-      //     }
-
-      //     return child;
-      //   },
-      // );
+      imageWidget = Image.memory(
+        decodedImage,
+        frameBuilder: (ctx, child, frame, _) {
+          if (frame == null) {
+            return Text(alt ?? "", style: context.style.generateTextStyle());
+          }
+          return child;
+        },
+      );
+    } else if (src.startsWith("asset:")) {
+      final assetPath = src.replaceFirst('asset:', '');
+      precacheImage(
+        AssetImage(assetPath),
+        context.buildContext,
+        onError: (exception, StackTrace stackTrace) {
+          context.parser.onImageError?.call(exception, stackTrace);
+        },
+      );
+      imageWidget = Image.asset(
+        assetPath,
+        frameBuilder: (ctx, child, frame, _) {
+          if (frame == null) {
+            return Text(alt ?? "", style: context.style.generateTextStyle());
+          }
+          return child;
+        },
+      );
+    } else {
+      imageWidget = CachedNetworkImage(
+        imageUrl: src,
+        errorWidget: (BuildContext c, String s, Object o) {
+          return Text(alt ?? "", style: context.style.generateTextStyle());
+        },
+        placeholder: (BuildContext context, String url) =>
+            Icon(FontAwesomeIcons.image),
+      );
     }
-    //TODO(Sub6Resources): precacheImage
+
+    return RawGestureDetector(
+      child: imageWidget,
+      gestures: {
+        MultipleTapGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<MultipleTapGestureRecognizer>(
+          () => MultipleTapGestureRecognizer(),
+          (instance) {
+            instance..onTap = () => context.parser.onImageTap?.call(src);
+          },
+        ),
+      },
+    );
   }
 }
 
@@ -250,6 +288,56 @@ class EmptyContentElement extends ReplacedElement {
   Widget toWidget(_) => null;
 }
 
+class RubyElement extends ReplacedElement {
+  dom.Element element;
+
+  RubyElement({@required this.element, String name = "ruby"})
+      : super(name: name, alignment: PlaceholderAlignment.middle);
+
+  @override
+  Widget toWidget(RenderContext context) {
+    dom.Node textNode = null;
+    List<Widget> widgets = List<Widget>();
+    //TODO calculate based off of parent font size.
+    final rubySize = max(9.0, context.style.fontSize.size / 2);
+    final rubyYPos = rubySize + 2;
+    element.nodes.forEach((c) {
+      if (c.nodeType == dom.Node.TEXT_NODE) {
+        textNode = c;
+      }
+      if (c is dom.Element) {
+        if (c.localName == "rt" && textNode != null) {
+          final widget = Stack(
+            alignment: Alignment.center,
+            children: <Widget>[
+              Container(
+                  alignment: Alignment.bottomCenter,
+                  child: Center(
+                      child: Transform(
+                          transform:
+                              Matrix4.translationValues(0, -(rubyYPos), 0),
+                          child: Text(c.innerHtml,
+                              style: context.style
+                                  .generateTextStyle()
+                                  .copyWith(fontSize: rubySize))))),
+              Container(
+                  child: Text(textNode.text.trim(),
+                      style: context.style.generateTextStyle())),
+            ],
+          );
+          widgets.add(widget);
+        }
+      }
+    });
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      textBaseline: TextBaseline.alphabetic,
+      mainAxisSize: MainAxisSize.min,
+      children: widgets,
+    );
+  }
+}
+
 ReplacedElement parseReplacedElement(dom.Element element) {
   switch (element.localName) {
     case "audio":
@@ -307,6 +395,10 @@ ReplacedElement parseReplacedElement(dom.Element element) {
         data: element.outerHtml,
         width: double.tryParse(element.attributes['width'] ?? ""),
         height: double.tryParse(element.attributes['height'] ?? ""),
+      );
+    case "ruby":
+      return RubyElement(
+        element: element,
       );
     default:
       return EmptyContentElement(name: element.localName);

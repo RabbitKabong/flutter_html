@@ -12,14 +12,18 @@ import 'package:flutter_html/src/html_elements.dart';
 import 'package:html/parser.dart' as htmlparser;
 import 'package:csslib/parser.dart' as cssparser;
 
-typedef OnLinkTap = void Function(String url);
+typedef OnTap = void Function(String url);
 typedef CustomRender = Widget Function(
     RenderContext context, Widget child, Map<String, String> elementAttributes);
 
 class HtmlParser extends StatelessWidget {
   final String htmlData;
   final String cssData;
-  final OnLinkTap onLinkTap;
+  final OnTap onLinkTap;
+  final OnTap onImageTap;
+  final ImageErrorListener onImageError;
+  final bool shrinkWrap;
+
   final Map<String, Style> style;
   final Map<String, CustomRender> customRender;
   final List<String> blacklistedElements;
@@ -28,6 +32,9 @@ class HtmlParser extends StatelessWidget {
     @required this.htmlData,
     @required this.cssData,
     this.onLinkTap,
+    this.onImageTap,
+    this.onImageError,
+    this.shrinkWrap,
     this.style,
     this.customRender,
     this.blacklistedElements,
@@ -38,7 +45,10 @@ class HtmlParser extends StatelessWidget {
     dom.Document document = parseHTML(htmlData);
     css.StyleSheet sheet = parseCSS(cssData);
     StyledElement lexedTree = lexDomTree(
-        document, customRender?.keys?.toList() ?? [], blacklistedElements);
+      document,
+      customRender?.keys?.toList() ?? [],
+      blacklistedElements,
+    );
     StyledElement styledTree = applyCSS(lexedTree, sheet);
     StyledElement inlineStyledTree = applyInlineStyles(styledTree);
     StyledElement customStyledTree = _applyCustomStyles(inlineStyledTree);
@@ -46,7 +56,10 @@ class HtmlParser extends StatelessWidget {
     StyledElement cleanedTree = cleanTree(cascadedStyledTree);
     InlineSpan parsedTree = parseTree(
       RenderContext(
-          style: Style.fromTextStyle(Theme.of(context).textTheme.body1)),
+        buildContext: context,
+        parser: this,
+        style: Style.fromTextStyle(Theme.of(context).textTheme.body1),
+      ),
       cleanedTree,
     );
 
@@ -103,6 +116,8 @@ class HtmlParser extends StatelessWidget {
         return parseReplacedElement(node);
       } else if (LAYOUT_ELEMENTS.contains(node.localName)) {
         return parseLayoutElement(node, children);
+      } else if (TABLE_STYLE_ELEMENTS.contains(node.localName)) {
+        return parseTableDefinitionElement(node, children);
       } else if (customRenderTags.contains(node.localName)) {
         return parseStyledElement(node, children);
       } else {
@@ -179,6 +194,7 @@ class HtmlParser extends StatelessWidget {
     tree = _processListCharacters(tree);
     tree = _processBeforesAndAfters(tree);
     tree = _collapseMargins(tree);
+    tree = _processFontSize(tree);
     return tree;
   }
 
@@ -187,7 +203,9 @@ class HtmlParser extends StatelessWidget {
     // Merge this element's style into the context so that children
     // inherit the correct style
     RenderContext newContext = RenderContext(
-      style: context.style.merge(tree.style),
+      buildContext: context.buildContext,
+      parser: this,
+      style: context.style.copyOnlyInherited(tree.style),
     );
 
     if (customRender?.containsKey(tree.name) ?? false) {
@@ -195,11 +213,13 @@ class HtmlParser extends StatelessWidget {
         child: ContainerSpan(
           newContext: newContext,
           style: tree.style,
+          shrinkWrap: context.parser.shrinkWrap,
           child: customRender[tree.name].call(
             newContext,
             ContainerSpan(
               newContext: newContext,
               style: tree.style,
+              shrinkWrap: context.parser.shrinkWrap,
               children: tree.children
                       ?.map((tree) => parseTree(newContext, tree))
                       ?.toList() ??
@@ -217,6 +237,7 @@ class HtmlParser extends StatelessWidget {
         child: ContainerSpan(
           newContext: newContext,
           style: tree.style,
+          shrinkWrap: context.parser.shrinkWrap,
           children: tree.children
                   ?.map((tree) => parseTree(newContext, tree))
                   ?.toList() ??
@@ -228,6 +249,7 @@ class HtmlParser extends StatelessWidget {
         child: ContainerSpan(
           newContext: newContext,
           style: tree.style,
+          shrinkWrap: context.parser.shrinkWrap,
           child: Stack(
             children: <Widget>[
               PositionedDirectional(
@@ -247,7 +269,7 @@ class HtmlParser extends StatelessWidget {
                             ?.map((tree) => parseTree(newContext, tree))
                             ?.toList() ??
                         [],
-                    style: tree.style.generateTextStyle(),
+                    style: newContext.style.generateTextStyle(),
                   ),
                 ),
               )
@@ -260,15 +282,23 @@ class HtmlParser extends StatelessWidget {
         return TextSpan(text: tree.text);
       } else {
         return WidgetSpan(
-          alignment: PlaceholderAlignment.aboveBaseline,
+          alignment: tree.alignment,
           baseline: TextBaseline.alphabetic,
           child: tree.toWidget(context),
         );
       }
     } else if (tree is InteractableElement) {
       return WidgetSpan(
-        child: GestureDetector(
-          onTap: () => onLinkTap(tree.href),
+        child: RawGestureDetector(
+          gestures: {
+            MultipleTapGestureRecognizer: GestureRecognizerFactoryWithHandlers<
+                MultipleTapGestureRecognizer>(
+              () => MultipleTapGestureRecognizer(),
+              (instance) {
+                instance..onTap = () => onLinkTap?.call(tree.href);
+              },
+            ),
+          },
           child: RichText(
             textAlign: newContext.style.textAlign,
             text: TextSpan(
@@ -284,6 +314,34 @@ class HtmlParser extends StatelessWidget {
     } else if (tree is LayoutElement) {
       return WidgetSpan(
         child: tree.toWidget(context),
+      );
+    } else if (tree.style.verticalAlign != null &&
+        tree.style.verticalAlign != VerticalAlign.BASELINE) {
+      double verticalOffset;
+      switch (tree.style.verticalAlign) {
+        case VerticalAlign.SUB:
+          verticalOffset = tree.style.fontSize.size / 2.5;
+          break;
+        case VerticalAlign.SUPER:
+          verticalOffset = tree.style.fontSize.size / -2.5;
+          break;
+        default:
+          break;
+      }
+      //Requires special layout features not available in the TextStyle API.
+      return WidgetSpan(
+        child: Transform.translate(
+          offset: Offset(0, verticalOffset),
+          child: RichText(
+            text: TextSpan(
+              style: newContext.style.generateTextStyle(),
+              children: tree.children
+                      .map((tree) => parseTree(newContext, tree))
+                      .toList() ??
+                  [],
+            ),
+          ),
+        ),
       );
     } else {
       ///[tree] is an inline element.
@@ -542,13 +600,31 @@ class HtmlParser extends StatelessWidget {
 
     return tree;
   }
+
+  static StyledElement _processFontSize(StyledElement tree) {
+    double parentFontSize = tree.style?.fontSize?.size ?? FontSize.medium.size;
+
+    tree.children?.forEach((child) {
+      if ((child.style.fontSize?.size ?? parentFontSize) < 0) {
+        child.style.fontSize =
+            FontSize(parentFontSize * -child.style.fontSize.size);
+      }
+
+      _processFontSize(child);
+    });
+    return tree;
+  }
 }
 
 ///TODO document better
 class RenderContext {
+  final BuildContext buildContext;
+  final HtmlParser parser;
   final Style style;
 
   RenderContext({
+    this.buildContext,
+    this.parser,
     this.style,
   });
 }
@@ -559,12 +635,14 @@ class ContainerSpan extends StatelessWidget {
   final List<InlineSpan> children;
   final Style style;
   final RenderContext newContext;
+  final bool shrinkWrap;
 
   ContainerSpan({
     this.child,
     this.children,
     this.style,
     this.newContext,
+    this.shrinkWrap = false,
   });
 
   @override
@@ -578,7 +656,7 @@ class ContainerSpan extends StatelessWidget {
       width: style?.width,
       padding: style?.padding,
       margin: style?.margin,
-      alignment: style?.alignment,
+      alignment: shrinkWrap ? null : style?.alignment,
       child: child ??
           RichText(
             textAlign: style?.textAlign,

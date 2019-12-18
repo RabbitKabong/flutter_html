@@ -1,7 +1,12 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
+<<<<<<< HEAD
 export "FLUTTER_ROOT=/Users/myk/Development/flutter"
 export "FLUTTER_APPLICATION_PATH=/Users/myk/Development/git/flutter_html/example"
+=======
+export "FLUTTER_ROOT=/Users/matthewwhitaker/Projects/FlutterDevelopment/flutter"
+export "FLUTTER_APPLICATION_PATH=/Users/matthewwhitaker/Projects/Flutter_Projects/flutter_html/example"
+>>>>>>> upstream/new-parser
 export "FLUTTER_TARGET=lib/main.dart"
 export "FLUTTER_BUILD_DIR=build"
 export "SYMROOT=${SOURCE_ROOT}/../build/ios"
