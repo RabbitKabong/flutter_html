@@ -88,7 +88,7 @@ StyledElement parseStyledElement(
       break;
     case "big":
       styledElement.style = Style(
-        fontSize: FontSize.larger,
+        fontSize: 20.0,
       );
       break;
     case "blockquote":
@@ -177,7 +177,7 @@ StyledElement parseStyledElement(
       break;
     case "h1":
       styledElement.style = Style(
-        fontSize: FontSize.xxLarge,
+        fontSize: 28.0,
         fontWeight: FontWeight.bold,
         margin: EdgeInsets.symmetric(vertical: 18.67),
         display: Display.BLOCK,
@@ -185,7 +185,7 @@ StyledElement parseStyledElement(
       break;
     case "h2":
       styledElement.style = Style(
-        fontSize: FontSize.xLarge,
+        fontSize: 21.0,
         fontWeight: FontWeight.bold,
         margin: EdgeInsets.symmetric(vertical: 17.5),
         display: Display.BLOCK,
@@ -193,7 +193,7 @@ StyledElement parseStyledElement(
       break;
     case "h3":
       styledElement.style = Style(
-        fontSize: FontSize(16.38),
+        fontSize: 16.5,
         fontWeight: FontWeight.bold,
         margin: EdgeInsets.symmetric(vertical: 16.5),
         display: Display.BLOCK,
@@ -201,7 +201,7 @@ StyledElement parseStyledElement(
       break;
     case "h4":
       styledElement.style = Style(
-        fontSize: FontSize.medium,
+        fontSize: 14.0,
         fontWeight: FontWeight.bold,
         margin: EdgeInsets.symmetric(vertical: 18.5),
         display: Display.BLOCK,
@@ -209,7 +209,7 @@ StyledElement parseStyledElement(
       break;
     case "h5":
       styledElement.style = Style(
-        fontSize: FontSize(11.62),
+        fontSize: 11.5,
         fontWeight: FontWeight.bold,
         margin: EdgeInsets.symmetric(vertical: 19.25),
         display: Display.BLOCK,
@@ -217,7 +217,7 @@ StyledElement parseStyledElement(
       break;
     case "h6":
       styledElement.style = Style(
-        fontSize: FontSize(9.38),
+        fontSize: 9.5,
         fontWeight: FontWeight.bold,
         margin: EdgeInsets.symmetric(vertical: 22),
         display: Display.BLOCK,
@@ -329,7 +329,7 @@ StyledElement parseStyledElement(
       break;
     case "small":
       styledElement.style = Style(
-        fontSize: FontSize.smaller,
+        fontSize: 10.0,
       );
       break;
     case "strike":
@@ -338,14 +338,14 @@ StyledElement parseStyledElement(
       continue bold;
     case "sub":
       styledElement.style = Style(
-        fontSize: FontSize.smaller,
-        verticalAlign: VerticalAlign.SUB,
+        fontSize: 10.0,
+        baselineOffset: -1,
       );
       break;
     case "sup":
       styledElement.style = Style(
-        fontSize: FontSize.smaller,
-        verticalAlign: VerticalAlign.SUPER,
+        fontSize: 10.0,
+        baselineOffset: 1,
       );
       break;
     case "tt":

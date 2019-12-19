@@ -13,6 +13,7 @@ typedef CustomTextStyle = TextStyle Function(
 );
 typedef CustomTextAlign = TextAlign Function(dom.Element elem);
 typedef CustomEdgeInsets = EdgeInsets Function(dom.Node node);
+typedef OnImageTap = void Function(String url);
 
 const OFFSET_TAGS_FONT_SIZE_FACTOR =
     0.7; //The ratio of the parent font for each of the offset tags: sup or sub
@@ -36,7 +37,7 @@ class LinkTextSpan extends TextSpan {
       {TextStyle style,
         this.url,
         String text,
-        OnTap onLinkTap,
+        OnLinkTap onLinkTap,
         List<TextSpan> children})
       : super(
           style: style,
@@ -60,7 +61,7 @@ class LinkBlock extends Container {
     String url,
     EdgeInsets padding,
     EdgeInsets margin,
-    OnTap onLinkTap,
+    OnLinkTap onLinkTap,
     this.children,
   }) : super(
           padding: padding,
@@ -177,7 +178,7 @@ class HtmlRichTextParser extends StatelessWidget {
   final ImageErrorListener onImageError;
   final TextStyle linkStyle;
   final ImageProperties imageProperties;
-  final OnTap onImageTap;
+  final OnImageTap onImageTap;
   final bool showImages;
 
   // style elements set a default style
@@ -760,59 +761,6 @@ class HtmlRichTextParser extends StatelessWidget {
                           node.attributes['src'].split("base64,")[1].trim()),
                       width: (width ?? -1) > 0 ? width : null,
                       height: (height ?? -1) > 0 ? width : null,
-                      scale: imageProperties?.scale ?? 1.0,
-                      matchTextDirection:
-                          imageProperties?.matchTextDirection ?? false,
-                      centerSlice: imageProperties?.centerSlice,
-                      filterQuality:
-                          imageProperties?.filterQuality ?? FilterQuality.low,
-                      alignment: imageProperties?.alignment ?? Alignment.center,
-                      colorBlendMode: imageProperties?.colorBlendMode,
-                      fit: imageProperties?.fit,
-                      color: imageProperties?.color,
-                      repeat: imageProperties?.repeat ?? ImageRepeat.noRepeat,
-                      semanticLabel: imageProperties?.semanticLabel,
-                      excludeFromSemantics:
-                          (imageProperties?.semanticLabel == null)
-                              ? true
-                              : false,
-                    ),
-                    onTap: () {
-                      if (onImageTap != null) {
-                        onImageTap(node.attributes['src']);
-                      }
-                    },
-                  ));
-                } else if (node.attributes['src'].startsWith('asset:')) {
-                  final assetPath = node.attributes['src'].replaceFirst('asset:', '');
-                  precacheImage(
-                    AssetImage(assetPath),
-                    buildContext,
-                    onError: onImageError ?? (_, __) {},
-                  );
-                  parseContext.rootWidgetList.add(GestureDetector(
-                    child: Image.asset(
-                      assetPath,
-                      frameBuilder: (context, child, frame, _) {
-                        if (node.attributes['alt'] != null && frame == null) {
-                          return BlockText(
-                            child: RichText(
-                              textAlign: TextAlign.center,
-                              text: TextSpan(
-                                text: node.attributes['alt'],
-                                style: nextContext.childStyle,
-                              ),
-                            ),
-                            shrinkToFit: shrinkToFit,
-                          );
-                        }
-                        if (frame != null) {
-                          return child;
-                        }
-                        return Container();
-                      },
-                      width: (width ?? -1) > 0 ? width : null,
-                      height: (height ?? -1) > 0 ? height : null,
                       scale: imageProperties?.scale ?? 1.0,
                       matchTextDirection:
                           imageProperties?.matchTextDirection ?? false,
