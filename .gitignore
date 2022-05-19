@@ -154,3 +154,5 @@ example/ios/Flutter/flutter_export_environment.sh
 pubspec.lock
 example/pubspec.lock
 
+# FVM req'd
+.fvm/flutter_sdk
