@@ -257,7 +257,8 @@ class HtmlParser extends StatelessWidget {
       );
     } else if (tree is ReplacedElement) {
       if (tree is TextContentElement) {
-        return TextSpan(text: tree.text);
+        return TextSpan(
+            text: tree.text, style: newContext.style?.generateTextStyle());
       } else {
         return WidgetSpan(
           alignment: PlaceholderAlignment.aboveBaseline,
